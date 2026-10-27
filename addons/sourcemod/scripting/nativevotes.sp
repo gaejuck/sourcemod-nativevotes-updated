@@ -312,19 +312,31 @@ public Action Timer_RetryCallVote(Handle timer, any data)
 public void ProcessMapList()
 {
 	int stringTableIndex = FindStringTable(STRINGTABLE_NAME);
+	if (stringTableIndex == INVALID_STRING_TABLE)
+	{
+		return;
+	}
+
 	int stringIndex = FindStringIndex(stringTableIndex, STRINGTABLE_ITEM);
+	if (stringIndex == INVALID_STRING_INDEX)
+	{
+		return;
+	}
 
 	StringMap overrideList = new StringMap();
 	
 	// Maplist resets every map
 	int length = GetStringTableDataLength(stringTableIndex, stringIndex);
-	char[] mapData = new char[length];
-	GetStringTableData(stringTableIndex, stringIndex, mapData, length);
+	if (length > 0)
+	{
+		char[] mapData = new char[length + 1];
+		GetStringTableData(stringTableIndex, stringIndex, mapData, length + 1);
 
-	// We'll get an extra blank entry if we don't do this
-	TrimString(mapData);
-	
-	ExplodeStringToStringMap(mapData, "\n", overrideList, PLATFORM_MAX_PATH, ImplodePart_Key);
+		// We'll get an extra blank entry if we don't do this
+		TrimString(mapData);
+		
+		ExplodeStringToStringMap(mapData, "\n", overrideList, PLATFORM_MAX_PATH, ImplodePart_Key);
+	}
 
 	Action mapResult = Plugin_Continue;
 	Call_StartForward(g_OverrideMaps);
@@ -337,6 +349,7 @@ public void ProcessMapList()
 		LogMessage("Overriding map list with %d maps", overrideList.Size);
 #endif 
 		
+		delete g_MapOverrides;
 		g_MapOverrides = overrideList;
 		
 		int maxLength = GetStringMapImplodeSize(overrideList, 1, ImplodePart_Key);
@@ -346,7 +359,7 @@ public void ProcessMapList()
 		if (newLength < maxLength && newMapData[newLength] != '\n')
 		{
 			// do this to avoid a StrCat
-			newLength += strcopy(newMapData[newLength], maxLength, "\n") + 1;
+			newLength += strcopy(newMapData[newLength], maxLength - newLength, "\n") + 1;
 		}
 		
 		SetStringTableData(stringTableIndex, stringIndex, newMapData, newLength);
